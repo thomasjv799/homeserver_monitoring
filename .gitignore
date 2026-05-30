@@ -4,3 +4,5 @@
 # Local runtime / editor noise
 *.local
 data/
+grafana-stack/.env
+grafana-stack/data/
