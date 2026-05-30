@@ -45,9 +45,9 @@ If `sensors` prints temperatures, Netdata will pick them up automatically.
 1. Send any message to your new bot.
 2. Run (replace `<TOKEN>`):
    ```bash
-   curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates" | grep -o '"chat":{"id":[0-9-]*'
+   curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates" | grep -oP '"chat":\{"id":\K-?[0-9]+'
    ```
-   The number after `"id":` is your **chat ID**.
+   The number printed is your **chat ID** (group chats have a leading `-`).
 
 ---
 
@@ -70,6 +70,11 @@ docker compose ps      # both containers should be "running"/"healthy"
 
 Open **http://<server-ip>:19999**.
 
+> Note: the `./netdata` directory is mounted as the container's config dir. On
+> first run Netdata copies its stock config into the empty slots, so our three
+> files just override the relevant bits. Do **not** add a bare `netdata.conf` to
+> `./netdata` before first run — that can stop Netdata from seeding its defaults.
+
 ---
 
 ## 5. Remote access with Tailscale
@@ -90,9 +95,9 @@ your tailnet at **http://<tailscale-ip>:19999** — no public ports opened.
 - [ ] Each running **Docker container** shows up with live CPU/RAM/IO stats.
 - [ ] After the first 6-hour scrape (or force one — see below), an **internet
       speed** chart appears under the Prometheus/speedtest section.
-- [ ] A **test alert reaches Telegram**:
+- [ ] A **test alert reaches Telegram** (run as the `netdata` user so it loads the config):
       ```bash
-      docker exec -it netdata /usr/libexec/netdata/plugins.d/alarm-notify.sh test
+      docker exec -it netdata su -s /bin/bash netdata -c '/usr/libexec/netdata/plugins.d/alarm-notify.sh test'
       ```
       You should receive a test message in your Telegram chat.
 - [ ] Dashboard reachable over **Tailscale** from a device off your home network.
