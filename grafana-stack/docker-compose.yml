@@ -88,7 +88,9 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     ports:
-      - "8080:8080"
+      # Host 8080 is often taken by other apps; expose cAdvisor's UI on 8081.
+      # Prometheus scrapes it internally via cadvisor:8080, unaffected by this.
+      - "8081:8080"
 
 volumes:
   grafana-data:
