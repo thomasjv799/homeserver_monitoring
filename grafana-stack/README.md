@@ -32,6 +32,27 @@ curl -s http://localhost:9323/metrics | head -n 5
 > Note: `0.0.0.0:9323` exposes daemon metrics on your LAN. On a trusted home
 > network this is fine; tighten to the docker bridge IP if you prefer.
 
+### 1a. Allow the Prometheus container through the host firewall
+
+`curl localhost:9323` above works from the host, but the `gs-prometheus`
+**container** reaches the daemon via the docker bridge gateway, and `ufw`'s
+default-deny incoming policy silently drops that traffic — the `docker` target
+shows DOWN with `context deadline exceeded`. Allow the bridge subnet to reach
+the metrics port:
+
+```bash
+# 172.19.0.0/16 = the grafana-stack_default bridge subnet
+#   (confirm with: docker network inspect grafana-stack_default -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
+sudo ufw allow from 172.19.0.0/16 to any port 9323 proto tcp comment 'docker daemon metrics for prometheus'
+```
+
+Verify the target is up (give it one scrape interval, ~15s):
+```bash
+curl -s http://localhost:9090/api/v1/targets \
+  | python3 -c "import sys,json;print([(t['labels']['job'],t['health']) for t in json.load(sys.stdin)['data']['activeTargets'] if t['labels']['job']=='docker'])"
+# want: [('docker', 'up')]
+```
+
 ## 2. Configure secrets
 
 ```bash
